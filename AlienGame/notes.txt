@@ -1,0 +1,5 @@
+THINGS TO ADD! 
+
+1-- MUSIC AND SOUND EFFECTS
+2-- Dropped item objects, for example little missle or extra life icons that increase life and missle count or even inscrease ship speed
+3-- TWO player options 

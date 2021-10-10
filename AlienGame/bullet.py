@@ -1,4 +1,5 @@
 import pygame
+import os
 from pygame.sprite import Sprite
  
 class Bullet(Sprite):
@@ -10,6 +11,7 @@ class Bullet(Sprite):
         self.screen = ai_game.screen
         self.settings = ai_game.settings
         self.color = self.settings.bullet_color
+        self.laser = pygame.mixer.Sound(os.path.join('laser.mp3'))
 
         # Create a bullet rect at (0, 0) and then set correct position.
         self.rect = pygame.Rect(0, 0, self.settings.bullet_width,
@@ -29,3 +31,6 @@ class Bullet(Sprite):
     def draw_bullet(self):
         """Draw the bullet to the screen."""
         pygame.draw.rect(self.screen, self.color, self.rect)
+        ### add sound effect 
+
+        pygame.mixer.Sound.play(self.laser)
