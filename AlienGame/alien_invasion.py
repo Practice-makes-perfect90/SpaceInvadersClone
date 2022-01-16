@@ -4,6 +4,7 @@ from time import sleep
 
 import pygame
 from pygame import event
+from pygame import sprite
 
 from settings import Settings
 from game_stats import GameStats
@@ -12,7 +13,8 @@ from bullet import Bullet
 from alien import Alien
 #add-------------------------------------------------------------------
 from astroid import Astroid
-from missle import Missle #TODO:
+from missile import Missile #TODO:
+from intro import *#FIXME: importing a game intro screen 
 
 
 class AlienInvasion:
@@ -21,6 +23,11 @@ class AlienInvasion:
     def __init__(self):
         """Initialize the game, and create game resources."""
         pygame.init()
+        #TODO: add music and sounds 
+        music='music.mp3'
+        pygame.mixer.init()
+        pygame.mixer.music.load(music)
+        pygame.mixer.music.play(-1)
         self.settings = Settings()
 
         self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -32,12 +39,12 @@ class AlienInvasion:
         self.stats = GameStats(self)
 
         #Import your astroid
-        self.missle_launch = False #TODO:
+        #self.missile_launch = False #TODO: 
         self.astroid = Astroid(self)
 
         self.ship = Ship(self)
 
-        self.missle =Missle(self)#TODO:
+        self.missiles = pygame.sprite.Group()
         self.bullets = pygame.sprite.Group()
         self.aliens = pygame.sprite.Group()
 
@@ -45,18 +52,24 @@ class AlienInvasion:
 
     def run_game(self):
         """Start the main loop for the game."""
+    
+        game_intro()
+        
+        
         while True:
+            #game_intro()#Game INTRO!
             self._check_events()
 
+            #FIXME: Maybe encapsulate this into a function that gets sent from intro
             if self.stats.game_active:
                 self.ship.update()
                 self._update_bullets()
                 self._update_aliens()
-
+                self._update_missiles()
                 #maybe add update astroids
                 self.astroid.update()
-                #add value for missle------------------------------------------------------------------------------------
-                self.missle.update()
+              
+            
 
             self._update_screen()
 
@@ -80,10 +93,10 @@ class AlienInvasion:
             sys.exit()
         elif event.key == pygame.K_SPACE:
             self._fire_bullet()
-        #add event for missle fire------------------------------------------
-        elif event.key == pygame.K_m:
-            self.missle_launch = True
-            #self._fire_missle()
+        
+        elif event.key == pygame.K_m:#FIXME: Fix this so it shoots a missile after pressing the m key 
+            self._fire_missile()
+            
 
     def _check_keyup_events(self, event):
         """Respond to key releases."""
@@ -98,10 +111,16 @@ class AlienInvasion:
             new_bullet = Bullet(self)
             self.bullets.add(new_bullet)
  #add-----------------------------------------#FIXME:
-    def _fire_missle(self):
-        #self.missle_launch = True
-        #if self._fire_missle == True:
-        self.missle.blitMissle()
+    def _fire_missile(self):
+       if len(self.missiles) < self.settings.missiles_allowed:
+           new_missile= Missile(self)
+           missile_width, missile_height = new_missile.rect.size  
+           
+
+
+           self.missiles.add(new_missile)
+
+           #FIXME:self._create_missile()
         
  #add----------------------------------------#FIXME: 
 
@@ -118,6 +137,26 @@ class AlienInvasion:
                  self.bullets.remove(bullet)
 
         self._check_bullet_alien_collisions()
+    
+    def _update_missiles(self):
+        """Update position of missiles and get rid of ones that are old"""
+        #just like bullets before update positions
+        self.missiles.update()
+
+        # Get rid of missiles that disappear
+        for missile in self.missiles.copy():
+            if missile.rect.bottom <=0:
+                self.missiles.remove(missile)
+
+        #self._check_missile_collisions()
+    
+    def _check_missile_collisions(self):
+       # remove aliens that hit the missile
+       missileHit = pygame.sprite.groupcollide(self.missiles,self.aliens,True,True)
+
+       if not self.aliens:
+           self.missiles.empty()
+           self._create_fleet()
 
     def _check_bullet_alien_collisions(self):
         """Respond to bullet-alien collisions."""
@@ -125,24 +164,20 @@ class AlienInvasion:
         collisions = pygame.sprite.groupcollide(
                 self.bullets, self.aliens, True, True)
 
-        
-
         if not self.aliens:
             # Destroy existing bullets and create new fleet.
             self.bullets.empty()
             self._create_fleet()
 
     
-    def _hit(self): #TODO:
+    def _hit(self): 
+        missileHit= pygame.sprite.spritecollide(self.astroid, self.aliens, True)
+        #hitList= pygame.sprite.spritecollide(self.missiles, self.aliens, True)
+        #for hits in hitList:
+            #print("hit!")#maybe add sound effects of explosions TODO:
         
-        hitList= pygame.sprite.spritecollide(self.astroid, self.aliens, True)
-        for hits in hitList:
-            print("hit!")#maybe add sound effects of explosions
  
-    
-
-
-    #add-------------------------------------------------------------------------------------------------        
+          
     def _update_aliens(self):
         """
         Check if the fleet is at an edge,
@@ -161,8 +196,10 @@ class AlienInvasion:
 
         # Look for aliens hitting the bottom of the screen.
         self._check_aliens_bottom()
-        #check for aliens hitting astroid #add ---------here
+        #alien hitting astroid
         self._hit()
+        #TODO: add for alien getting hit by a missile
+
 
     def _check_aliens_bottom(self):
         """Check if any aliens have reached the bottom of the screen."""
@@ -191,6 +228,13 @@ class AlienInvasion:
             sleep(0.5)
         else:
             self.stats.game_active = False
+
+    #TODO: create a group rect for missles
+    def _create_missile(self):
+        missile = Missile(self)
+        missile_width, missile_height = missile.rect.size
+        self.missiles.add(missile)
+    #FIXME:
 
     def _create_fleet(self):
         """Create the fleet of aliens."""
@@ -245,13 +289,9 @@ class AlienInvasion:
 
         # draw astroid #FIXME:
         self.astroid.blitAstroid()
-        
-        if self.missle_launch == True:#FIXME:
-            sleep(0.5)
-            self._fire_missle()
-        
-        
-        
+             
+        for missile in self.missiles.sprites():
+            missile.draw_missile()
         
 
         for bullet in self.bullets.sprites():
