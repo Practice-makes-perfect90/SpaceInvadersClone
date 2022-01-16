@@ -19,6 +19,13 @@ class Settings:
         self.bullet_color = (255, 0, 0)
         self.bullets_allowed = 3
 
+        #Ufo Laser color
+        self.ufoLaser_Color = (0,0,255)
+        self.ufoLaser_speed = 1
+        self.ufoLaser_width = 3
+        self.ufoLaser_height = 15
+        self.ufoLaser_allowed = 5
+
         # Missle settings 
         self.missile_speed= 0.25
         self.missile_width =6

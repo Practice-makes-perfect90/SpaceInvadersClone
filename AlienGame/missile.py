@@ -1,4 +1,5 @@
 import pygame
+import os
 
 from pygame.sprite import Sprite
 
@@ -10,6 +11,7 @@ class Missile(Sprite):
         self.settings = ai_game.settings
         self.screen_rect = ai_game.screen.get_rect()
         self.color = self.settings.missile_color
+        self.launchNoise = pygame.mixer.Sound(os.path.join('Audio/rocket.mp3'))
         #probably not needed
 
         # Create a missile rect at (0, 0) and then set correct position. # <----convert this for missiles 
@@ -18,9 +20,7 @@ class Missile(Sprite):
 
 
 
-        #FIXME:-maybe use this self.rect = pygame.Rect(0, 0, self.settings.bullet_width,
-        #self.settings.bullet_height)
-            # Create a bullet rect at (0, 0) and then set correct position.
+       #Create the missile at the top of the ship
         self.rect = pygame.Rect(0, 0, self.settings.missile_height, self.settings.missile_width)
            
         #puts missile rect at the top of the ship
@@ -41,7 +41,6 @@ class Missile(Sprite):
         """Draw the missile to the screen."""
         pygame.draw.rect(self.screen, self.color, self.rect)#TODO:Hope this with the self.image draws a ship 
         self.screen.blit(self.image, self.rect)
+        pygame.mixer.Sound.play(self.launchNoise)
         
     
-    #FIXME:def blitMissile(self):
-       #self.screen.blit(self.image, self.rect)

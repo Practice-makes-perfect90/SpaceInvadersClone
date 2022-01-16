@@ -1,7 +1,7 @@
 
 import sys
 from time import sleep
-
+import os
 import pygame
 from pygame import event
 from pygame import sprite
@@ -11,9 +11,11 @@ from game_stats import GameStats
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
-#add-------------------------------------------------------------------
+
+#added-------------------------------------------------------------------
+from alienLaser import UfoLaser
 from astroid import Astroid
-from missile import Missile #TODO:
+from missile import Missile
 from intro import *#FIXME: importing a game intro screen 
 
 
@@ -24,7 +26,7 @@ class AlienInvasion:
         """Initialize the game, and create game resources."""
         pygame.init()
         #TODO: add music and sounds 
-        music='music.mp3'
+        music='Audio/music.mp3'
         pygame.mixer.init()
         pygame.mixer.music.load(music)
         pygame.mixer.music.play(-1)
@@ -44,9 +46,15 @@ class AlienInvasion:
 
         self.ship = Ship(self)
 
+        ### Fix this it might break the game ###
+        self.alien = Alien(self)
+
         self.missiles = pygame.sprite.Group()
         self.bullets = pygame.sprite.Group()
         self.aliens = pygame.sprite.Group()
+
+
+        self.lasers = pygame.sprite.Group()
 
         self._create_fleet()
 
@@ -68,6 +76,8 @@ class AlienInvasion:
                 self._update_missiles()
                 #maybe add update astroids
                 self.astroid.update()
+                #fix this
+                self._update_lasers()
               
             
 
@@ -93,8 +103,10 @@ class AlienInvasion:
             sys.exit()
         elif event.key == pygame.K_SPACE:
             self._fire_bullet()
+
+            #self._fire_laser()
         
-        elif event.key == pygame.K_m:#FIXME: Fix this so it shoots a missile after pressing the m key 
+        elif event.key == pygame.K_m:#fires a missile
             self._fire_missile()
             
 
@@ -110,21 +122,17 @@ class AlienInvasion:
         if len(self.bullets) < self.settings.bullets_allowed:
             new_bullet = Bullet(self)
             self.bullets.add(new_bullet)
- #add-----------------------------------------#FIXME:
+
     def _fire_missile(self):
        if len(self.missiles) < self.settings.missiles_allowed:
            new_missile= Missile(self)
-           missile_width, missile_height = new_missile.rect.size  
-           
-
-
            self.missiles.add(new_missile)
 
-           #FIXME:self._create_missile()
-        
- #add----------------------------------------#FIXME: 
+    def _fire_laser(self):
+        if len(self.lasers) < self.settings.ufoLaser_allowed:
+            new_laser = UfoLaser(self)
 
-
+            self.lasers.add(new_laser)
 
     def _update_bullets(self):
         """Update position of bullets and get rid of old bullets."""
@@ -137,6 +145,12 @@ class AlienInvasion:
                  self.bullets.remove(bullet)
 
         self._check_bullet_alien_collisions()
+    def _update_lasers(self):
+        self.lasers.update()
+        # might be names not matching
+        for laser in self.lasers.copy():
+            if laser.rect.bottom <= 0:
+                self.lasers.remove(laser)
     
     def _update_missiles(self):
         """Update position of missiles and get rid of ones that are old"""
@@ -145,20 +159,22 @@ class AlienInvasion:
 
         # Get rid of missiles that disappear
         for missile in self.missiles.copy():
-            if missile.rect.bottom <=0:
+            if missile.rect.bottom <= 0:
                 self.missiles.remove(missile)
 
-        #self._check_missile_collisions()
+        self._check_missile_collisions()
     
     def _check_missile_collisions(self):
        # remove aliens that hit the missile
-       missileHit = pygame.sprite.groupcollide(self.missiles,self.aliens,True,True)
+       missileHit = pygame.sprite.groupcollide(self.missiles,self.aliens,False,True)
 
        if not self.aliens:
            self.missiles.empty()
            self._create_fleet()
 
     def _check_bullet_alien_collisions(self):
+
+        bulletHit = pygame.mixer.Sound(os.path.join('Audio/boom.mp3'))
         """Respond to bullet-alien collisions."""
         # Remove any bullets and aliens that have collided.
         collisions = pygame.sprite.groupcollide(
@@ -168,16 +184,8 @@ class AlienInvasion:
             # Destroy existing bullets and create new fleet.
             self.bullets.empty()
             self._create_fleet()
-
-    
     def _hit(self): 
         missileHit= pygame.sprite.spritecollide(self.astroid, self.aliens, True)
-        #hitList= pygame.sprite.spritecollide(self.missiles, self.aliens, True)
-        #for hits in hitList:
-            #print("hit!")#maybe add sound effects of explosions TODO:
-        
- 
-          
     def _update_aliens(self):
         """
         Check if the fleet is at an edge,
@@ -185,10 +193,6 @@ class AlienInvasion:
         """
         self._check_fleet_edges()
         self.aliens.update()
-    
-
-            
-
 
         # Look for alien-ship collisions.
         if pygame.sprite.spritecollideany(self.ship, self.aliens):
@@ -229,12 +233,12 @@ class AlienInvasion:
         else:
             self.stats.game_active = False
 
-    #TODO: create a group rect for missles
+
     def _create_missile(self):
         missile = Missile(self)
         missile_width, missile_height = missile.rect.size
         self.missiles.add(missile)
-    #FIXME:
+
 
     def _create_fleet(self):
         """Create the fleet of aliens."""
@@ -271,11 +275,8 @@ class AlienInvasion:
             if alien.check_edges():
                 self._change_fleet_direction()
                 break
-
     #implement a change in astroid direction 
-    
-            
-            
+
     def _change_fleet_direction(self):
         """Drop the entire fleet and change the fleet's direction."""
         for alien in self.aliens.sprites():
@@ -292,7 +293,9 @@ class AlienInvasion:
              
         for missile in self.missiles.sprites():
             missile.draw_missile()
-        
+
+        for laser in self.lasers.sprites():
+            laser.draw_ufo_laser()
 
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()
